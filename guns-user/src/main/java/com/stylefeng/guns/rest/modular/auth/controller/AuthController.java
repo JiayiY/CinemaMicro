@@ -28,32 +28,20 @@ public class AuthController {
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
-/*    @Resource(name = "simpleValidator")
-    private IReqValidator reqValidator;*/
-
-    @Reference(interfaceClass = UserAPI.class)
-    private UserAPI userAPI;
+    @Resource(name = "simpleValidator")
+    private IReqValidator reqValidator;
 
     @RequestMapping(value = "${jwt.auth-path}")
-    public ResponseVO createAuthenticationToken(AuthRequest authRequest) {
+    public ResponseEntity<?> createAuthenticationToken(AuthRequest authRequest) {
 
-        /*boolean validate = reqValidator.validate(authRequest);*/
+        boolean validate = reqValidator.validate(authRequest);
 
-        boolean validate = true;
-
-        // 去掉guns自身携带的用户名密码验证机制
-        int userId = userAPI.login(authRequest.getUserName(), authRequest.getPassword());
-        if (userId == 0) {
-            validate = false;
-        }
         if (validate) {
             final String randomKey = jwtTokenUtil.getRandomKey();
-            final String token = jwtTokenUtil.generateToken("" + userId, randomKey);
-//            return ResponseEntity.ok(new AuthResponse(token, randomKey));
-            return ResponseVO.success(new AuthResponse(token, randomKey));
+            final String token = jwtTokenUtil.generateToken(authRequest.getUserName(), randomKey);
+            return ResponseEntity.ok(new AuthResponse(token, randomKey));
         } else {
-            // throw new GunsException(BizExceptionEnum.AUTH_REQUEST_ERROR);
-            return ResponseVO.serviceFail("用户名或密码错误");
+            throw new GunsException(BizExceptionEnum.AUTH_REQUEST_ERROR);
         }
     }
 }
