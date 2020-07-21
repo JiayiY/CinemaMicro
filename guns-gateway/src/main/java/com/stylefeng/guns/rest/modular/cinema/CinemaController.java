@@ -35,15 +35,19 @@ public class CinemaController {
 
     private static final String IMG_PRE = "";
 
-    @Reference(interfaceClass = CinemaServiceApi.class, cache = "lru", check = false)
+    */
+/**
+     * 启用本地缓存，关闭检查
+     *//*
+
+    @Reference(interfaceClass = CinemaServiceApi.class, cache = "lru", connections = 10, check = false)
     private CinemaServiceApi cinemaServiceApi;
 
     @Reference(interfaceClass = OrderServiceApi.class, check = false, group = "order2020")
     private OrderServiceApi orderServiceApi;
 
     @RequestMapping(value = "getCinemas")
-    public ResponseVO getCinemas(CinemaRequestVO cinemaRequestVO) {
-
+    public ResponseVO<?> getCinemas(CinemaRequestVO cinemaRequestVO) {
         try {
             cinemaRequestVO.init();
             // 按照5个条件进行筛选
@@ -65,12 +69,15 @@ public class CinemaController {
 
     */
 /**
-     * 热点数据（放缓存）
+     * @Author yangjiayi
+     * @Description // 热点数据（放缓存）
+     * @Date 11:26 2020/7/21
+     * @param cinemaRequestVO
+     * @return com.stylefeng.guns.rest.modular.vo.ResponseVO
      *//*
 
     @RequestMapping(value = "getCondition")
-    public ResponseVO getCondition(CinemaRequestVO cinemaRequestVO) {
-
+    public ResponseVO<?> getCondition(CinemaRequestVO cinemaRequestVO) {
         try {
             cinemaRequestVO.init();
             // 获取三个对象，然后封装成一个对象返回即可
@@ -89,7 +96,7 @@ public class CinemaController {
     }
 
     @RequestMapping(value = "getFields")
-    public ResponseVO getFields(Integer cinemaId) {
+    public ResponseVO<?> getFields(Integer cinemaId) {
         try {
             CinemaFieldsResponseVO cinemaFieldResponseVO = new CinemaFieldsResponseVO();
             CinemaInfoVO cinemaInfoVO = cinemaServiceApi.getCinemaInfo(cinemaId);
@@ -104,7 +111,7 @@ public class CinemaController {
     }
 
     @RequestMapping(value = "getFieldInfo", method = RequestMethod.POST)
-    public ResponseVO getFieldInfo(Integer cinemaId, Integer fieldId) {
+    public ResponseVO<?> getFieldInfo(Integer cinemaId, Integer fieldId) {
         try {
             CinemaFieldInfoResponseVO cinemaFieldInfoResponseVO = new CinemaFieldInfoResponseVO();
             FilmInfoVO filmInfoVO = cinemaServiceApi.getFilmInfoByFieldId(fieldId);
