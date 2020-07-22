@@ -1,10 +1,10 @@
-/*
 package com.stylefeng.guns.rest.modular.cinema;
 
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.stylefeng.guns.api.cinema.CinemaServiceApi;
 import com.stylefeng.guns.api.cinema.vo.*;
+import com.stylefeng.guns.api.order.OrderServiceApi;
 import com.stylefeng.guns.rest.modular.cinema.vo.CinemaConditionResponseVO;
 import com.stylefeng.guns.rest.modular.cinema.vo.CinemaFieldInfoResponseVO;
 import com.stylefeng.guns.rest.modular.cinema.vo.CinemaFieldsResponseVO;
@@ -18,14 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-*/
 /**
  * @ClassName CinemaController
  * @Description TODO
  * @Author yjy
  * @Date 2020/7/21 11:07
  * @Vertion 1.0
- **//*
+ */
 
 @Slf4j
 @RestController
@@ -35,15 +34,13 @@ public class CinemaController {
 
     private static final String IMG_PRE = "";
 
-    */
-/**
+    /**
      * 启用本地缓存，关闭检查
-     *//*
-
+     */
     @Reference(interfaceClass = CinemaServiceApi.class, cache = "lru", connections = 10, check = false)
     private CinemaServiceApi cinemaServiceApi;
 
-    @Reference(interfaceClass = OrderServiceApi.class, check = false, group = "order2020")
+    @Reference(interfaceClass = OrderServiceApi.class, check = false)
     private OrderServiceApi orderServiceApi;
 
     @RequestMapping(value = "getCinemas")
@@ -67,15 +64,13 @@ public class CinemaController {
         }
     }
 
-    */
-/**
+    /**
      * @Author yangjiayi
-     * @Description // 热点数据（放缓存）
-     * @Date 11:26 2020/7/21
+     * @Description // 热点数据 (放缓存)
+     * @Date 11:14 2020/7/22
      * @param cinemaRequestVO
-     * @return com.stylefeng.guns.rest.modular.vo.ResponseVO
-     *//*
-
+     * @return com.stylefeng.guns.rest.modular.vo.ResponseVO<?>
+     */
     @RequestMapping(value = "getCondition")
     public ResponseVO<?> getCondition(CinemaRequestVO cinemaRequestVO) {
         try {
@@ -129,4 +124,3 @@ public class CinemaController {
     }
 }
 
-*/

@@ -69,5 +69,12 @@ public interface CinemaServiceApi {
      */
     FilmInfoVO getFilmInfoByFieldId(int fieldId);
 
+    /**
+     * @Author yangjiayi
+     * @Description // 是订单模块需要的方法
+     * @Date 10:55 2020/7/22
+     * @param fieldId
+     * @return com.stylefeng.guns.api.cinema.vo.OrderQueryVO
+     */
     OrderQueryVO getOrderQueryVOByFieldId(int fieldId);
 }
