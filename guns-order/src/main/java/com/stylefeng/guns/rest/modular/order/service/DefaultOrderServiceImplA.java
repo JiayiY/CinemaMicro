@@ -10,8 +10,8 @@ import com.stylefeng.guns.api.cinema.vo.OrderQueryVO;
 import com.stylefeng.guns.api.order.OrderServiceApi;
 import com.stylefeng.guns.api.order.vo.OrderVO;
 import com.stylefeng.guns.core.util.UUIDUtil;
-import com.stylefeng.guns.rest.common.persistence.dao.OrderTMapper;
-import com.stylefeng.guns.rest.common.persistence.model.OrderT;
+import com.stylefeng.guns.rest.common.persistence.dao.OrderTMapperA;
+import com.stylefeng.guns.rest.common.persistence.model.OrderTA;
 import com.stylefeng.guns.rest.common.util.FTPUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,22 +23,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @ClassName DefaultOrderServiceImpl
+ * @ClassName DefaultOderServiceImplA
  * @Description TODO
  * @Author yjy
- * @Date 2020/7/22 10:30
+ * @Date 2020/7/22 14:15
  * @Vertion 1.0
  **/
-@Component
 @Slf4j
-@Service(interfaceClass = OrderServiceApi.class, group = "default")
-public class DefaultOrderServiceImpl implements OrderServiceApi {
-
+@Component
+@Service(interfaceClass = OrderServiceApi.class, group = "orderA", timeout = 9999999)
+public class DefaultOrderServiceImplA implements OrderServiceApi{
     @Reference(interfaceClass = CinemaServiceApi.class, check = false)
     private CinemaServiceApi cinemaServiceApi;
 
     @Autowired
-    private OrderTMapper orderTMapper;
+    private OrderTMapperA orderTMapperA;
 
     @Autowired
     private FTPUtil ftpUtil;
@@ -46,7 +45,7 @@ public class DefaultOrderServiceImpl implements OrderServiceApi {
     @Override
     public boolean isTrueSeats(Integer fieldId, String seats) {
         // 根据fieldId找到对应的座位位置图路径
-        String seatAddress = orderTMapper.getSeatsByFieldId(fieldId);
+        String seatAddress = orderTMapperA.getSeatsByFieldId(fieldId);
         // 根据路径读取位置图，以判断seats是否为真
         String fileStr = ftpUtil.getFileStrByAddress(seatAddress);
 
@@ -71,11 +70,11 @@ public class DefaultOrderServiceImpl implements OrderServiceApi {
     public boolean isSoldSeats(Integer fieldId, String seats) {
         EntityWrapper entityWrapper = new EntityWrapper();
         entityWrapper.eq("field_id", fieldId);
-        List<OrderT> orderTList = orderTMapper.selectList(entityWrapper);
+        List<OrderTA> orderTAList = orderTMapperA.selectList(entityWrapper);
         String[] seatArr = seats.split(",");
         // 遍历该放映场次的所有订单，如果存在某一订单的座位包含seats中的座位，则表示已售出
-        for (OrderT orderT : orderTList) {
-            String[] ids = orderT.getSeatsIds().split(",");
+        for (OrderTA orderTA : orderTAList) {
+            String[] ids = orderTA.getSeatsIds().split(",");
             for (String seat : seatArr) {
                 for (String id : ids) {
                     if (seat.equalsIgnoreCase(id)) {
@@ -96,24 +95,24 @@ public class DefaultOrderServiceImpl implements OrderServiceApi {
         Integer cinemaId = Integer.parseInt(orderQueryVO.getCinemaId());
         // 影片信息
         Integer filmId = Integer.parseInt(orderQueryVO.getFilmId());
-        double filmPrice = Double.parseDouble(orderQueryVO.getFilmPrice());
+        Double filmPrice = Double.parseDouble(orderQueryVO.getFilmPrice());
         // 计算订单总金额
         int seatsCnt = soldSeats.split(",").length;
         Double orderPrice = getOrderPrice(seatsCnt, filmPrice);
 
-        OrderT orderT = new OrderT();
-        orderT.setUuid(uuid);
-        orderT.setCinemaId(cinemaId);
-        orderT.setFieldId(fieldId);
-        orderT.setFilmId(filmId);
-        orderT.setFilmPrice(filmPrice);
-        orderT.setSeatsIds(soldSeats);
-        orderT.setSeatsName(seatsName);
-        orderT.setOrderPrice(orderPrice);
-        orderT.setOrderUser(userId);
-        Integer insert = orderTMapper.insert(orderT);
+        OrderTA orderTA = new OrderTA();
+        orderTA.setUuid(uuid);
+        orderTA.setCinemaId(cinemaId);
+        orderTA.setFieldId(fieldId);
+        orderTA.setFilmId(filmId);
+        orderTA.setFilmPrice(filmPrice);
+        orderTA.setSeatsIds(soldSeats);
+        orderTA.setSeatsName(seatsName);
+        orderTA.setOrderPrice(orderPrice);
+        orderTA.setOrderUser(userId);
+        Integer insert = orderTMapperA.insert(orderTA);
         if (insert > 0) {
-            OrderVO orderVO = orderTMapper.getOrderVOById(uuid);
+            OrderVO orderVO = orderTMapperA.getOrderVOById(uuid);
             if (orderVO == null || orderVO.getOrderId() == null) {
                 log.error("订单信息查询失败，订单编号为:{}", uuid);
                 return null;
@@ -133,16 +132,16 @@ public class DefaultOrderServiceImpl implements OrderServiceApi {
             log.error("用户订单查询失败，用户编号未传入");
             return null;
         } else {
-            List<OrderVO> orderVOList = orderTMapper.getOrderVOListByUserId(userId, page);
+            List<OrderVO> orderVOList = orderTMapperA.getOrderVOListByUserId(userId, page);
             if (orderVOList == null || orderVOList.size() == 0) {
                 result.setTotal(0);
                 result.setRecords(new ArrayList<>());
                 return result;
             } else {
                 // 获取订单总数
-                EntityWrapper<OrderT> entityWrapper = new EntityWrapper<>();
+                EntityWrapper<OrderTA> entityWrapper = new EntityWrapper<>();
                 entityWrapper.eq("order_user", userId);
-                Integer count = orderTMapper.selectCount(entityWrapper);
+                Integer count = orderTMapperA.selectCount(entityWrapper);
                 // 将结果放入Page
                 result.setTotal(count);
                 result.setRecords(orderVOList);
@@ -157,46 +156,38 @@ public class DefaultOrderServiceImpl implements OrderServiceApi {
             log.error("获取已售座位失败，放映场次编号未传入");
             return "";
         } else {
-            return orderTMapper.getSoldSeatsByFieldId(fieldId);
+            return orderTMapperA.getSoldSeatsByFieldId(fieldId);
         }
     }
 
     @Override
     public OrderVO getOrderInfoById(String orderId) {
-        return orderTMapper.getOrderVOById(orderId);
+        return orderTMapperA.getOrderVOById(orderId);
     }
 
     @Override
     public boolean paySuccess(String orderId) {
-        OrderT orderT = new OrderT();
-        orderT.setUuid(orderId);
-        orderT.setOrderStatus(1);
-        Integer result = orderTMapper.updateById(orderT);
+        OrderTA orderTA = new OrderTA();
+        orderTA.setUuid(orderId);
+        orderTA.setOrderStatus(1);
+        Integer result = orderTMapperA.updateById(orderTA);
         return result > 0;
     }
 
     @Override
     public boolean payFail(String orderId) {
-        OrderT orderT = new OrderT();
-        orderT.setUuid(orderId);
-        orderT.setOrderStatus(2);
-        Integer result = orderTMapper.updateById(orderT);
+        OrderTA orderTA = new OrderTA();
+        orderTA.setUuid(orderId);
+        orderTA.setOrderStatus(2);
+        Integer result = orderTMapperA.updateById(orderTA);
         return result > 0;
     }
 
     @Override
     public Integer getUserIdById(String orderId) {
-        return orderTMapper.getUserIdById(orderId);
+        return orderTMapperA.getUserIdById(orderId);
     }
 
-    /**
-     * @Author yangjiayi
-     * @Description // 获取订单总金额
-     * @Date 10:58 2020/7/22
-     * @param seatsCnt
-     * @param filmPrice
-     * @return java.lang.Double
-     */
     private Double getOrderPrice(int seatsCnt, double filmPrice) {
         BigDecimal seatsCntDecimal = new BigDecimal(seatsCnt);
         BigDecimal filmPriceDecimal = new BigDecimal(filmPrice);
