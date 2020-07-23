@@ -3,6 +3,11 @@ package com.stylefeng.guns.rest.modular.order;
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.dubbo.rpc.RpcContext;
 import com.baomidou.mybatisplus.plugins.Page;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
+import com.stylefeng.guns.api.Alipay.AlipayServiceApi;
+import com.stylefeng.guns.api.Alipay.vo.AlipayInfoVO;
+import com.stylefeng.guns.api.Alipay.vo.AlipayResultVO;
 import com.stylefeng.guns.api.order.OrderServiceApi;
 import com.stylefeng.guns.api.order.vo.OrderVO;
 import com.stylefeng.guns.core.util.ToolUtil;
@@ -36,6 +41,31 @@ public class OrderController {
     @Reference(interfaceClass = OrderServiceApi.class, check = false, group = "orderA")
     private OrderServiceApi orderServiceApiA;
 
+    @Reference(interfaceClass = AlipayServiceApi.class, check = false)
+    private AlipayServiceApi alipayServiceApi;
+
+    /**
+     * 服务降级
+     */
+    public ResponseVO<?> error(Integer fieldId, String soldSeats, String seatsName) {
+        return ResponseVO.serviceFail("抱歉，下单的人太多了，请稍后重试");
+    }
+
+    @HystrixCommand(fallbackMethod = "error",
+            commandProperties = {
+                    @HystrixProperty(name = "execution.isolation.strategy", value = "THREAD"),
+                    @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "4000"),
+                    @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold", value = "10"),
+                    @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage", value = "50")
+            },
+            threadPoolProperties = {
+                    @HystrixProperty(name = "coreSize", value = "1"),
+                    @HystrixProperty(name = "maxQueueSize", value = "10"),
+                    @HystrixProperty(name = "keepAliveTimeMinutes", value = "1000"),
+                    @HystrixProperty(name = "queueSizeRejectionThreshold", value = "8"),
+                    @HystrixProperty(name = "metrics.rollingStats.numBuckets", value = "12"),
+                    @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "1500")
+            })
     @RequestMapping(value = "buyTickets", method = RequestMethod.POST)
     public ResponseVO<?> buyTickets(Integer fieldId, String soldSeats, String seatsName) {
         try {
@@ -90,5 +120,52 @@ public class OrderController {
         return ResponseVO.success(nowPage, totalPages, IMG_PRE, orderVOList);
     }
 
+    @RequestMapping(value = "getPayInfo", method = RequestMethod.POST)
+    public ResponseVO getPayInfo(@RequestParam("orderId") String orderId) {
+        // 获取当前用户的信息
+        String userId = CurrentUser.getCurrentUser();
+        if (userId == null || userId.trim().length() == 0) {
+            return ResponseVO.serviceFail("用户未登录");
+        }
+
+        // 设置隐式参数（将当前登录用户的编号userId传递给后端）
+        RpcContext.getContext().setAttachment("userId", userId);
+
+        // 获取订单二维码
+        AlipayInfoVO alipayInfoVO = alipayServiceApi.getQRCode(orderId);
+        if (alipayInfoVO == null) {
+            return ResponseVO.serviceFail("订单支付失败，请稍后重试");
+        } else {
+            return ResponseVO.success(IMG_PRE, alipayInfoVO);
+        }
+    }
+
+    @RequestMapping(value = "getPayResult", method = RequestMethod.POST)
+    public ResponseVO getPayResult(@RequestParam("orderId") String orderId,
+                                   @RequestParam(value = "tryNums", required = false, defaultValue = "1") Integer tryNums) {
+        // 获取当前用户的信息
+        String userId = CurrentUser.getCurrentUser();
+        if (userId == null || userId.trim().length() == 0) {
+            return ResponseVO.serviceFail("用户未登录");
+        }
+
+        // 设置隐式参数（将当前登录用户的编号userId传递给后端）
+        RpcContext.getContext().setAttachment("userId", userId);
+
+        // 判断是否支付超时
+        if (tryNums > 3) {
+            return ResponseVO.serviceFail("订单支付失败，请稍后重试");
+        } else {
+            AlipayResultVO alipayResultVO = alipayServiceApi.getOrderStatus(orderId);
+            if (alipayResultVO == null || ToolUtil.isEmpty(alipayResultVO.getOrderId())) {
+                AlipayResultVO serviceFailVO = new AlipayResultVO();
+                serviceFailVO.setOrderId(orderId);
+                serviceFailVO.setOrderStatus(0);
+                serviceFailVO.setOrderMsg("支付失败");
+                return ResponseVO.success(serviceFailVO);
+            }
+            return ResponseVO.success(alipayResultVO);
+        }
+    }
 }
 
