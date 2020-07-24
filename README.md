@@ -28,3 +28,10 @@ https://gitee.com/stylefeng/guns/tree/v4.2/，选择下载V4.2版本的Guns框�
 
 [用户模块开发](doc/UserDev.md)
 
+[影片模块](doc/FilmDev.md)
+
+[订单模块](doc/OrderDev.md)
+
+[分布式事务](doc/DistributedTransaction.md)
+
+[Dubbo特性在项目中的应用总结](doc/DubboDev.md)

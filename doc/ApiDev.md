@@ -1,7 +1,3 @@
-[TOC]
-
-
-
 # API网关
 
 类似于设计模式中的Facade模式
@@ -93,7 +89,7 @@ spring:
        <groupId>com.stylefeng</groupId>
        <artifactId>guns-api</artifactId>
        <version>${guns.version}</version>
-</dependency>
+    </dependency>
    ```
 
    其他模块中引入依赖：
@@ -102,7 +98,7 @@ spring:
    <dependency>
    	<groupId>com.stylefeng</groupId>
    	<artifactId>guns-api</artifactId>
-</dependency>
+    </dependency>
    ```
    
    此时，接口类只需要在`guns-api`中写一份就够了，避免了冗余，即抽离业务 API。
